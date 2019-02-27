@@ -90,7 +90,7 @@ def main():
   conn.send(selectedFile.to_bytes(4, 'big'))
 
 
-  print("Downloading " + files[selectedFile])
+  print("Downloading " + files[selectedFile] + "...")
 
 
   #Recieve the size of the specified file.
@@ -108,5 +108,5 @@ def main():
   conn.close()
 
 
-if __name__ == "main":
+if __name__ == "__main__":
   main()
