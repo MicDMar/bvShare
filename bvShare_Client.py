@@ -10,7 +10,7 @@ DEFAULT_REPO_PATH = 'repository'
 
 #Reads in all the bytes that we were expecting to recieve
 #from the server.
-def getAllBytes(bytesExpected):
+def getAllBytes(bytesExpected, conn):
   data = []
   while len(data) < bytesExpected:
     chunk = conn.recv(bytesExpected - len(data))
@@ -19,13 +19,19 @@ def getAllBytes(bytesExpected):
 
 #Reads in bytes one at a time so that it can stop
 #at a new line character. (\n)
-def getByteLine():
-  data = []
+def getByteLine(conn):
+  data = ""
+  
+  #Push one byte into the data array
+  byte = conn.recv(1)
+  data += byte.decode()
+
   index = 0
   while data[index] != '\n':
     byte = conn.recv(1)
-    data += byte
-  return data
+    data += byte.decode()
+    index += 1
+  return data[:-1]
 
 #Prints the fileArray as shown:
 #   [1] file.txt
@@ -35,7 +41,7 @@ def getByteLine():
 def prettyPrintFiles(fileArray):
   value = 1
   for fileName in fileArray:
-    print( '[' + value + '] ' + fileName)
+    print( '[' + str(value) + '] ' + str(fileName))
     value += 1
 
 #Check to see if the input is indeed an integer and less than the
@@ -47,7 +53,7 @@ def getValidInput(maximum):
     if (selectedFileNum > maximum):
       return 0
     else:
-      return selectedFileNum - 1
+      return selectedFileNum
   except:
     return 0
 
@@ -74,33 +80,38 @@ def main():
 
 
   #Recieve the number of file names that will be sent from the server.
-  numFiles = int.from_bytes(getAllBytes(4), 'big')
-  
+  numFiles = int.from_bytes(getAllBytes(4, conn), 'big')
+
+  print("Number of files the server has is: " + str(numFiles))
+
   #Recieve file names here and append them to our file list.
-  while (len(files) <= numFiles):
-    files.append(getByteLine())
-  
+  while (len(files) < numFiles):
+    files.append(getByteLine(conn))
+    print("After append.")
+    
+  print("Recieved all the file names.")
+
   #Print out file names in a 'pretty' fashion for the user.
   prettyPrintFiles(files)
 
   #Get the file that the user wants to download.
-  selectedFile = getValidInput(len(files))
+  selectedFile = getValidInput(numFiles)
 
   #Send a request to download the file from the server.
   conn.send(selectedFile.to_bytes(4, 'big'))
 
 
-  print("Downloading " + files[selectedFile] + "...")
+  print("Downloading " + files[selectedFile - 1] + "...")
 
 
   #Recieve the size of the specified file.
-  fileSize = int.from_bytes(getAllBytes(4), 'big')
+  fileSize = int.from_bytes(getAllBytes(4, conn), 'big')
 
   #Recieve the file contents from the server.
-  actualFile = getAllBytes(fileSize)
+  actualFile = getAllBytes(fileSize, conn)
 
   #Write to the file in our specified repository location
-  with open(os.path.join(repo, files[selectedFile]), 'wb') as f:
+  with open(os.path.join(repo, files[selectedFile-1]), 'wb') as f:
     f.write(bytes(actualFile))
 
   print("Finished Downloading!")
