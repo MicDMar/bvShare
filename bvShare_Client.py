@@ -82,14 +82,9 @@ def main():
   #Recieve the number of file names that will be sent from the server.
   numFiles = int.from_bytes(getAllBytes(4, conn), 'big')
 
-  print("Number of files the server has is: " + str(numFiles))
-
   #Recieve file names here and append them to our file list.
   while (len(files) < numFiles):
     files.append(getByteLine(conn))
-    print("After append.")
-    
-  print("Recieved all the file names.")
 
   #Print out file names in a 'pretty' fashion for the user.
   prettyPrintFiles(files)
@@ -100,6 +95,10 @@ def main():
   #Send a request to download the file from the server.
   conn.send(selectedFile.to_bytes(4, 'big'))
 
+  if(0 <= selectedFile > len(files)):
+    print("INVALID FILE SELECTION!")
+    print("Closing connection...")
+    return
 
   print("Downloading " + files[selectedFile - 1] + "...")
 
