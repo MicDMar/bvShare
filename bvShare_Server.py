@@ -65,7 +65,7 @@ if __name__ == "__main__":
             
         # Read the contents of the selected file
         print("Sending file: {}".format(file_list[selected_file - 1]))
-        with open(file_list[selected_file - 1], "rb") as f:
+        with open(join(repo, file_list[selected_file - 1]), "rb") as f:
             # Send the contents
             contents = f.read()
             send_int(conn, len(contents))
