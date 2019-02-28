@@ -16,7 +16,8 @@ def send_int(conn, num, size = 4, form = "big"):
     conn.send(num.to_bytes(size, form))
     
 def send_string(conn, string):
-    send_int(len(string))
+    string += '\n'
+    # send_int(conn, len(string))
     conn.send(string.encode())
 
 def get_n_bytes(conn, n):
@@ -24,6 +25,7 @@ def get_n_bytes(conn, n):
     while len(data) < n:
         data += conn.recv(n - len(data))
     return data
+
 
 if __name__ == "__main__":
     # Retrieve values from environment variables
@@ -37,11 +39,16 @@ if __name__ == "__main__":
     listener.bind((address, port))
     listener.listen()
 
-    while True:
-        conn, clientAddr = listener.accept()
+    print("Server is listening on {}:{}".format(address, port))
 
-        file_list = get_files(REPO)
+    while True:
+        print("Awaiting connection")
+        conn, clientAddr = listener.accept()
+        print("Received connection: {}".format(clientAddr))
+
+        file_list = get_files(repo)
         num_files = len(file_list)
+        print("Found {} files in in repsitory: {}".format(num_files, repo))
         
         # Send the client the list of files
         send_int(conn, num_files)
@@ -50,14 +57,20 @@ if __name__ == "__main__":
 
         # Receive which file the client wants
         selected_file = int.from_bytes(get_n_bytes(conn, 4), "big")
-
+        # Check if the number is invalid
+        if 0 <= selected_file > len(file_list):
+            print("Invalid file selected: {}".format(selected_file))
+            conn.close()
+            continue
+            
         # Read the contents of the selected file
-        contents = []
-        with open(file_list[selected_file], "rb") as f:
-            contents += f.read()
+        print("Sending file: {}".format(file_list[selected_file - 1]))
+        with open(file_list[selected_file - 1], "rb") as f:
+            # Send the contents
+            contents = f.read()
+            send_int(conn, len(contents))
+            conn.send(contents)
              
-        # Send the contents
-        send_int(conn, len(contents))
-        conn.send(contents)
-        
+        print("Closing connection: {}".format(clientAddr))
+        print("-" * 15)
         conn.close()
