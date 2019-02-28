@@ -1,7 +1,6 @@
 from os import listdir
 from os.path import isfile, join
 import os
-
 import sys
 
 from socket import *
